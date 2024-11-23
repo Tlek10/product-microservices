@@ -5,6 +5,7 @@ import com.example.product_service.repository.ProductRepository;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -24,11 +25,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 @SpringBootTest
 @Testcontainers
 @AutoConfigureMockMvc
-
 class ProductServiceApplicationTests {
 
 	@Container
@@ -47,6 +46,11 @@ class ProductServiceApplicationTests {
 		dynamicPropertyRegistry.add("spring.data.mongodb.url", mongoDBContainer::getReplicaSetUrl);
 	}
 
+	@BeforeEach
+	void setup() {
+		productRepository.deleteAll(); // Очищаем репозиторий перед каждым тестом
+	}
+
 	@Test
 	void shouldCreateProduct() throws Exception {
 		ProductRequest productRequest = getProductRequest();
@@ -56,14 +60,16 @@ class ProductServiceApplicationTests {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(productRequestString))
 				.andExpect(status().isCreated());
-		Assertions.assertEquals(1,productRepository.findAll().size());
+
+		Assertions.assertEquals(1, productRepository.findAll().size(),
+				"Ожидалось, что в репозитории будет 1 продукт");
 	}
 
 	private ProductRequest getProductRequest() {
 		return ProductRequest.builder()
 				.name("iphone 13")
 				.description("iphone 13")
-				.price(BigDecimal.valueOf(1200).toString()) // Исправлено на BigDecimal
+				.price(BigDecimal.valueOf(1200).toString()) // Убедитесь, что price сохраняется корректно
 				.build();
 	}
 }
